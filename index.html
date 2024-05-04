@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Search Ene</title>
+  <style>
+    /* Toggle switch styles */
+    .theme-switch {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      display: flex;
+      align-items: center;
+    }
+
+    .theme-switch input[type="checkbox"] {
+      display: none;
+    }
+
+    .theme-switch label {
+      width: 50px;
+      height: 24px;
+      background-color: #4caf50;
+      border-radius: 24px;
+      position: relative;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .theme-switch label:before {
+      content: "";
+      width: 20px;
+      height: 20px;
+      background-color: #fff;
+      border-radius: 50%;
+      position: absolute;
+      left: 2px;
+      top: 2px;
+      transition: transform 0.3s ease;
+    }
+
+    #dark-mode-toggle:checked + label {
+      background-color: #333;
+    }
+
+    #dark-mode-toggle:checked + label:before {
+      transform: translateX(26px);
+    }
+
+    /* Light theme styles */
+    body {
+      background-color: #f4f4f4;
+      color: #333;
+      /* ... other styles */
+    }
+
+    /* Dark theme styles */
+    body.dark-mode {
+      background-color: #333;
+      color: #fff;
+      /* ... other styles */
+    }
+
+    /* Container styles */
+    .container {
+      text-align: center;
+      padding-top: 50px;
+    }
+
+    /* Search bar styles */
+    #search-box {
+      width: 50%;
+      max-width: 600px;
+      height: 48px;
+      font-size: 18px;
+      padding: 0 16px;
+      border: none;
+      border-radius: 24px;
+      background-color: #fafafa;
+      box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.1);
+      margin: 0 auto;
+      display: block;
+    }
+
+    /* Search button styles */
+    #search-button {
+      height: 48px;
+      font-size: 18px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      margin: 20px auto;
+      display: block;
+    }
+
+    /* Search button hover styles */
+    #search-button:hover {
+      background-color: #459b49;
+    }
+
+    /* Whitesearch text styles */
+    h1 {
+      font-size: 36px;
+      font-weight: bold;
+      color: #ff555f;
+      margin-bottom: 40px;
+    }
+
+    /* Search results container */
+    #results {
+      margin-top: 60px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      list-style: none;
+      padding: 0;
+    }
+
+    /* Search result item */
+    .result-item {
+      width: calc(100% - 20px);
+      margin: 10px;
+      background-color: white;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+
+    /* Search result link */
+    .result-item a {
+      display: block;
+      padding: 15px;
+      color: #333;
+      text-decoration: none;
+    }
+
+    /* Search result title */
+    .result-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    /* Search result snippet */
+    .result-snippet {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.4;
+    }
+
+    /* Search result url */
+    .result-url {
+      font-size: 14px;
+      color: #0071ce;
+      margin-top: 5px;
+    }
+
+    /* History modal styles */
+    #history-modal {
+      display: none;
+      position: fixed;
+      z-index:
+      1;
+left: 0;
+top: 0;
+width: 100%;
+height: 100%;
+background-color: rgba(0, 0, 0, 0.5);
+text-align: center;
+padding-top: 100px;
+}
+#history-modal h2 {
+  color: #fff;
+  margin-bottom: 20px;
+}
+
+#history-modal ul {
+  list-style: none;
+  padding: 0;
+  color: #fff;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+#history-modal button {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  cursor: pointer;
+  margin-top: 20px;
+}
+
+#history-modal button:hover {
+  background-color: #459b49;
+}
+
+/* Other existing styles... */
+  </style>
+</head>
+<body>
+  <div class="theme-switch">
+    <input type="checkbox" id="dark-mode-toggle" />
+    <label for="dark-mode-toggle"></label>
+  </div>
+
+  <div class="container">
+    <h1>WHITESEARCH</h1>
+    <input type="text" id="search-box" placeholder="Search anything...">
+    <button id="search-button">Search</button>
+    <button id="history-button">View History</button>
+    <ul id="results"></ul>
+    <div id="pagination"></div>
+  </div>
+  <div id="loader"><img src="loading.gif" alt="Loading..."></div>
+
+  <!-- History modal -->
+  <div id="history-modal">
+    <h2>Search History</h2>
+    <ul id="history-list"></ul>
+    <button id="history-close">Close</button>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      var apiKey = 'AIzaSyDtpHmMHNwem-MaD6r0AMoztCvYgZKLvCo';
+      var cx = '81e3b9e3aad3b4fc6';
+      var currentPage = 1;
+
+      function search(query, page) {
+        $('#loader').show(); // Show loading animation
+        $.get('https://www.googleapis.com/customsearch/v1', {
+          key: apiKey,
+          cx: cx,
+          q: query,
+          start: (page - 1) * 10 + 1,
+          num: 10
+        }, function(data) {
+          var results = '';
+          for (var i = 0; i < data.items.length; i++) {
+            var title = data.items[i].title.replace(new RegExp('(' + query + ')', 'ig'), '<span class="highlight">$1</span>');
+            var snippet = data.items[i].snippet.replace(new RegExp('(' + query + ')', 'ig'), '<span class="highlight">$1</span>');
+            var thumbnail = data.items[i].pagemap && data.items[i].pagemap.cse_thumbnail && data.items[i].pagemap.cse_thumbnail[0] ? data.items[i].pagemap.cse_thumbnail[0].src : '';
+            results += '<li class="result-item">' +
+                          '<a href="' + data.items[i].link + '">' +
+                            (thumbnail ? '<img src="' + thumbnail + '" alt="Thumbnail" class="result-thumbnail">' : '') +
+                            '<div class="result-title">' + title + '</div>' +
+                            '<div class="result-snippet">' + snippet + '</div>' +
+                            '<div class="result-url">' + data.items[i].displayLink + '</div>' +
+                          '</a>' +
+                        '</li>';
+          }
+          $('#results').html(results);
+          displayPagination(query, data.queries.nextPage);
+          $('#loader').hide(); // Hide loading animation
+        });
+      }
+
+      function displayPagination(query, nextPageToken) {
+        var paginationHtml = '';
+        if (currentPage > 1) {
+          paginationHtml += '<button class="pagination-button" data-page="' + (currentPage - 1) + '">Previous</button>';
+        }
+
+        if (nextPageToken) {
+          paginationHtml += '<button class="pagination-button" data-page="' + (currentPage + 1) + '">Next</button>';
+        }
+
+        $('#pagination').html(paginationHtml);
+        $('.pagination-button').click(function() {
+          currentPage = $(this).data('page');
+          search(query, currentPage);
+        });
+      }
+
+      function getCookie(name) {
+        var value = "; " + document.cookie;
+        var parts = value.split("; " + name + "=");
+        if (parts.length == 2)
+          return parts
+            .pop()
+            .split(";")
+            .shift();
+      }
+
+      function setCookie(name, value, days) {
+        var expires = "";
+        if (days) {
+          var date = new Date();
+          date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+          expires = "; expires=" + date.toUTCString();
+        }
+        document.cookie = name + "=" + (value || "") + expires + "; path=/";
+      }
+
+      function displayHistory() {
+        var history = getCookie("searchHistory").split(",");
+        var historyHtml = "";
+        for (var i = 0; i < history.length; i++) {
+          historyHtml += "<li>" + history[i] + "</li>";
+        }
+        $("#history-list").html(historyHtml);
+        $("#history-modal").show();
+      }
+
+      $("#history-button").click(function() {
+        displayHistory();
+      });
+
+      $("#history-close").click(function() {
+        $("#history-modal").hide();
+      });
+
+      $("#search-button").click(function() {
+        var query = $("#search-box").val();
+        currentPage = 1;
+
+        // Store the search query in the cookie
+        var searchHistory = getCookie("searchHistory");
+        if (searchHistory) {
+          searchHistory += "," + query;
+        } else {
+          searchHistory = query;
+        }
+        setCookie("searchHistory", searchHistory, 30);
+
+        search(query, currentPage);
+      });
+
+      // Added responsiveness
+      $(window).resize(function() {
+        if ($(window).width() < 600) {
+          $('.result-item').css('width', 'calc(100% - 20px)');
+        } else {
+          $('.result-item').css('width', 'calc(33.333% - 20px)');
+        }
+      });
+
+      // Dark mode toggle
+      $('#dark-mode-toggle').change(function() {
+        $('body').toggleClass('dark-mode');
+      });
+    });
+  </script>
+</body>
+</html>
+
